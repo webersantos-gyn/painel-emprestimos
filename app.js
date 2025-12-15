@@ -1099,13 +1099,15 @@ window.updateReportPreview = function () {
     const btnSend = document.getElementById('btnSendReport');
 
     if (!debtorId) {
-        previewEl.innerHTML = '<p style="text-align:center;">Selecione um devedor.</p>';
+        previewEl.innerHTML = '<p style="text-align:center; color: var(--text-secondary)">Selecione um devedor.</p>';
         btnSend.style.display = 'none';
         return;
     }
 
     const debtor = dbDebtors.find(d => d.id == debtorId);
-    if (!debtor) return;
+    if(!debtor) return;
+    
+    // Find loans for this debtor
     const loans = dbLoans.filter(l => l.debtorId == debtorId);
 
     let lines = [];
@@ -1113,23 +1115,25 @@ window.updateReportPreview = function () {
 
     loans.forEach(l => {
         l.installments.forEach(inst => {
-            if (inst.status === 'Pendente') {
-                lines.push(`- Parcela ${inst.number}/${l.installmentsCount} (${l.desc || 'Empr√©stimo'}): ${formatMoney(inst.value)}`);
-                totalDue += inst.value;
+            if (inst.status === 'Pendente' || inst.status === 'Parcial') {
+                const rest = inst.value - (inst.paidValue || 0);
+                lines.push(`- Parcela ${inst.number}/${l.installmentsCount} (${l.desc || 'Empr√©stimo'}): ${rest.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                totalDue += rest;
             }
         });
     });
 
     if (lines.length === 0) {
-        previewEl.innerHTML = '<p style="text-align:center;">Nada pendente!</p>';
+        previewEl.innerHTML = '<p style="text-align:center;">Nada pendente para este devedor! üéâ</p>';
         btnSend.style.display = 'none';
         return;
     }
 
     const now = new Date().toLocaleDateString('pt-BR');
-    let text = `*COBRAN√áA - ${now}*\nOl√° ${debtor.name}, segue resumo:\n\n`;
+    let text = `*RELAT√ìRIO DE COBRAN√áA*\n`;
+    text += `Ol√° ${debtor.name}, segue demonstrativo atualizado (${now}):\n\n`;
     text += lines.join('\n');
-    text += `\n\n*TOTAL A PAGAR: ${formatMoney(totalDue)}*`;
+    text += `\n\n*TOTAL A PAGAR: ${totalDue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*`;
 
     previewEl.textContent = text;
     btnSend.style.display = 'flex';
@@ -1138,66 +1142,61 @@ window.updateReportPreview = function () {
     if (cleanNum) {
         btnSend.href = `https://wa.me/55${cleanNum}?text=${encodeURIComponent(text)}`;
     } else {
-        btnSend.onclick = () => alert("Sem telefone cadastrado.");
+        btnSend.href = '#';
+        btnSend.onclick = () => alert("Devedor sem telefone cadastrado.");
     }
 }
 
-// Helpers
-function formatMoney(n) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-function formatDate(s) { if (!s) return '-'; const d = new Date(s + "T00:00:00"); return d.toLocaleDateString('pt-BR'); }
+// --- Backup & Restore Logic ---
 
-// Init
-init(); 
- / /   - - -   B a c k u p   &   R e s t o r e   L o g i c   - - -  
-  
- w i n d o w . d o w n l o a d B a c k u p   =   f u n c t i o n   ( )   {  
-         c o n s t   b a c k u p D a t a   =   {  
-                 l o a n s :   d b L o a n s ,  
-                 d e b t o r s :   d b D e b t o r s ,  
-                 c a r d s :   d b C a r d s ,  
-                 b a c k u p D a t e :   n e w   D a t e ( ) . t o I S O S t r i n g ( )  
-         } ;  
-  
-         c o n s t   d a t a S t r   =   " d a t a : t e x t / j s o n ; c h a r s e t = u t f - 8 , "   +   e n c o d e U R I C o m p o n e n t ( J S O N . s t r i n g i f y ( b a c k u p D a t a ) ) ;  
-         c o n s t   d o w n l o a d A n c h o r N o d e   =   d o c u m e n t . c r e a t e E l e m e n t ( ' a ' ) ;  
-         d o w n l o a d A n c h o r N o d e . s e t A t t r i b u t e ( " h r e f " ,   d a t a S t r ) ;  
-         d o w n l o a d A n c h o r N o d e . s e t A t t r i b u t e ( " d o w n l o a d " ,   " b a c k u p _ p a i n e l _ "   +   n e w   D a t e ( ) . g e t T i m e ( )   +   " . j s o n " ) ;  
-         d o c u m e n t . b o d y . a p p e n d C h i l d ( d o w n l o a d A n c h o r N o d e ) ;   / /   r e q u i r e d   f o r   f i r e f o x  
-         d o w n l o a d A n c h o r N o d e . c l i c k ( ) ;  
-         d o w n l o a d A n c h o r N o d e . r e m o v e ( ) ;  
- }  
-  
- w i n d o w . r e s t o r e B a c k u p   =   f u n c t i o n   ( i n p u t )   {  
-         c o n s t   f i l e   =   i n p u t . f i l e s [ 0 ] ;  
-         i f   ( ! f i l e )   r e t u r n ;  
-  
-         c o n s t   r e a d e r   =   n e w   F i l e R e a d e r ( ) ;  
-         r e a d e r . o n l o a d   =   f u n c t i o n   ( e )   {  
-                 t r y   {  
-                         c o n s t   j s o n   =   J S O N . p a r s e ( e . t a r g e t . r e s u l t ) ;  
-  
-                         / /   B a s i c   V a l i d a t i o n  
-                         i f   ( ! j s o n . l o a n s   | |   ! j s o n . d e b t o r s )   {  
-                                 r e t u r n   a l e r t ( " A r q u i v o   d e   b a c k u p   i n v √ ° l i d o ! " ) ;  
-                         }  
-  
-                         i f   ( c o n f i r m ( " A T E N √ ! √ íO :   I s s o   i r √ °   S U B S T I T U I R   t o d o s   o s   d a d o s   a t u a i s   p e l o s   d o   b a c k u p .   D e s e j a   c o n t i n u a r ? " ) )   {  
-                                 d b L o a n s   =   j s o n . l o a n s   | |   [ ] ;  
-                                 d b D e b t o r s   =   j s o n . d e b t o r s   | |   [ ] ;  
-                                 d b C a r d s   =   j s o n . c a r d s   | |   [ ] ;  
-  
-                                 s a v e D a t a ( ) ;  
-                                 u p d a t e U I ( ) ;  
-                                 a l e r t ( " B a c k u p   r e s t a u r a d o   c o m   s u c e s s o ! " ) ;  
-                                 c l o s e M o d a l ( ' e x p o r t M o d a l ' ) ;  
-                         }  
-                 }   c a t c h   ( e r r )   {  
-                         c o n s o l e . e r r o r ( e r r ) ;  
-                         a l e r t ( " E r r o   a o   l e r   a r q u i v o   d e   b a c k u p . " ) ;  
-                 }  
-                 / /   C l e a r   i n p u t   s o   s a m e   f i l e   c a n   b e   s e l e c t e d   a g a i n   i f   n e e d e d  
-                 i n p u t . v a l u e   =   ' ' ;  
-         } ;  
-         r e a d e r . r e a d A s T e x t ( f i l e ) ;  
- }  
- 
+window.downloadBackup = function() {
+    const backupData = {
+        loans: dbLoans,
+        debtors: dbDebtors,
+        cards: dbCards,
+        backupDate: new Date().toISOString()
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "backup_painel_" + new Date().getTime() + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+window.restoreBackup = function(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const json = JSON.parse(e.target.result);
+            
+            if (!json.loans || !json.debtors) {
+                return alert("Arquivo de backup inv√°lido!");
+            }
+            
+            if(confirm("ATEN√á√ÉO: Isso ir√° SUBSTITUIR todos os dados atuais pelos do backup. Deseja continuar?")) {
+                dbLoans = json.loans || [];
+                dbDebtors = json.debtors || [];
+                dbCards = json.cards || [];
+                
+                saveData();
+                updateUI();
+                alert("Backup restaurado com sucesso!");
+                closeModal('exportModal');
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao ler arquivo de backup.");
+        }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// Ensure init is called
+init();
