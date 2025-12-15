@@ -1105,8 +1105,8 @@ window.updateReportPreview = function () {
     }
 
     const debtor = dbDebtors.find(d => d.id == debtorId);
-    if(!debtor) return;
-    
+    if (!debtor) return;
+
     // Find loans for this debtor
     const loans = dbLoans.filter(l => l.debtorId == debtorId);
 
@@ -1149,14 +1149,14 @@ window.updateReportPreview = function () {
 
 // --- Backup & Restore Logic ---
 
-window.downloadBackup = function() {
+window.downloadBackup = function () {
     const backupData = {
         loans: dbLoans,
         debtors: dbDebtors,
         cards: dbCards,
         backupDate: new Date().toISOString()
     };
-    
+
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -1166,24 +1166,24 @@ window.downloadBackup = function() {
     downloadAnchorNode.remove();
 }
 
-window.restoreBackup = function(input) {
+window.restoreBackup = function (input) {
     const file = input.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const json = JSON.parse(e.target.result);
-            
+
             if (!json.loans || !json.debtors) {
                 return alert("Arquivo de backup inválido!");
             }
-            
-            if(confirm("ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais pelos do backup. Deseja continuar?")) {
+
+            if (confirm("ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais pelos do backup. Deseja continuar?")) {
                 dbLoans = json.loans || [];
                 dbDebtors = json.debtors || [];
                 dbCards = json.cards || [];
-                
+
                 saveData();
                 updateUI();
                 alert("Backup restaurado com sucesso!");
@@ -1197,6 +1197,12 @@ window.restoreBackup = function(input) {
     };
     reader.readAsText(file);
 }
+
+
+// --- Helpers ---
+function formatMoney(n) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function formatDate(s) { if (!s) return '-'; const d = new Date(s + "T00:00:00"); return d.toLocaleDateString('pt-BR'); }
+
 
 // Ensure init is called
 init();
