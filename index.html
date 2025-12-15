@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Devedores | Dashboard Premium</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Libraries for Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> <!-- Added -->
+</head>
+
+<!-- ... -->
+<!-- Button 3: Report -->
+<!-- (Keeping existing buttons, inserting Billing Button after Reports or Controls) -->
+<!-- ... -->
+
+<!-- In Controls Section, add Billing Button -->
+
+<!-- ... existing export button ... -->
+
+<!-- ... -->
+
+<!-- Modal: Billing Preview (NEW) -->
+<div id="billingModal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 900px; width: 95%;">
+        <div class="modal-header">
+            <h2>Gerar Cobrança</h2>
+            <button class="close-btn" onclick="closeModal('billingModal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--text-secondary); margin-bottom:15px;">Prévia da imagem a ser enviada:</p>
+
+            <!-- Container that will be screenshotted -->
+            <div id="billingCaptureArea"
+                style="background: #FFFFFF; padding: 16px; border-radius: 8px; border: 1px solid #E0E5F2; color: #2B3674; font-family: 'Inter', sans-serif;">
+                <div
+                    style="text-align:center; margin-bottom:10px; border-bottom: 2px solid #E0E5F2; padding-bottom:8px;">
+                    <h3 style="margin:0; color:#4318FF; font-size: 1.2rem;">Resumo de Pendências</h3>
+                    <p id="billingDate" style="margin:2px 0 0 0; font-size:0.75rem; color:#A3AED0;"></p>
+                </div>
+
+                <table style="width:100%; border-collapse: collapse; font-size: 0.8rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #E0E5F2;">
+                            <th style="text-align:left; padding:4px 8px; color:#A3AED0; font-weight:600;">Vencimento
+                            </th>
+                            <th style="text-align:left; padding:4px 8px; color:#A3AED0; font-weight:600;">Descrição</th>
+                            <th style="text-align:right; padding:4px 8px; color:#A3AED0; font-weight:600;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billingTableBody">
+                        <!-- JS populated -->
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 2px solid #E0E5F2;">
+                            <td colspan="2"
+                                style="text-align:right; padding:8px 8px; font-weight:700; color:#2B3674; font-size:0.9rem;">
+                                TOTAL:</td>
+                            <td id="billingTotal"
+                                style="text-align:right; padding:8px 8px; font-weight:700; color:#E31A1A; font-size:0.9rem;">
+                                R$ 0,00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="margin-top:15px; text-align:center; font-size:0.7rem; color:#A3AED0;">
+                    <p>Desconsidere caso já pago.</p>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button onclick="shareBillingWhatsapp()" class="btn-primary"
+                    style="background: #25d366; border-color:#25d366; color:white;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-right:8px;">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                    Enviar WhatsApp
+                </button>
+                <button onclick="downloadBillingImage()" class="btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-right:8px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Baixar Imagem
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<body>
+
+    <div class="layout-container">
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="brand">
+                <div class="logo-icon">
+                    <img src="Logo_Painel_Transparente.png" alt="Logo"
+                        style="height: 40px; width: auto; object-fit: contain;">
+                </div>
+                <h1>Painel de Empréstimos</h1>
+            </div>
+            <div class="header-actions">
+                <!-- Button 1: Manage Debtors -->
+                <button id="btnManageDebtors" class="btn-primary" title="Gerenciar Devedores">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </button>
+
+                <!-- Button 2: Add Loan -->
+                <button id="btnNewLoan" class="btn-primary" title="Lançar Empréstimo"
+                    style="border-color: var(--neon-blue); color: var(--neon-blue);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                </button>
+
+                <!-- Button Bulk Pay (Hidden) -->
+                <button id="btnBulkPay" class="btn-primary hidden" onclick="markSelectedPaid()"
+                    title="Baixar Selecionados"
+                    style="background-color: var(--neon-green); border-color: var(--neon-green); color: black;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Button 3: Report -->
+                <button id="btnReport" class="btn-primary" title="Relatórios"
+                    style="border-color: var(--neon-purple); color: var(--neon-purple);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Button Billing -->
+                <button id="btnBilling" class="btn-primary" title="Gerar Cobrança">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                </button>
+
+                <!-- Button 4: Manage Cards -->
+                <button id="btnManageCards" class="btn-primary" title="Gerenciar Cartões">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <section class="kpi-section">
+            <div class="kpi-card glass kpi-blue">
+                <div class="kpi-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="kpi-content">
+                    <span>Total Emprestado</span>
+                    <strong id="kpiTotalEmprestado">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div class="kpi-card glass kpi-green">
+                <div class="kpi-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="kpi-content">
+                    <span>Total Recebido</span>
+                    <strong id="kpiTotalRecebido">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div class="kpi-card glass kpi-red">
+                <div class="kpi-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="kpi-content">
+                    <span>Total Pendente</span>
+                    <strong id="kpiTotalPendente">R$ 0,00</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls / Filters -->
+        <section class="controls-section glass">
+            <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="filterSearch" placeholder="Buscar geral...">
+            </div>
+
+            <div class="filters">
+                <!-- Filters Row 1 -->
+                <div class="select-wrapper">
+                    <select id="filterDebtor">
+                        <option value="all">Todos os Devedores</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <select id="filterCardDueDay">
+                        <option value="all">Dia Venc. Cartão</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <select id="filterType">
+                        <option value="all">Todos os Tipos</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao">Cartão</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <select id="filterStatus">
+                        <option value="all">Todos os Status</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Pago">Pago</option>
+                    </select>
+                </div>
+
+                <!-- Filters Row 2 (Dates) -->
+                <div class="date-filter-wrapper"
+                    style="display:flex; align-items:center; gap:5px; color:var(--text-secondary); font-size:0.9rem;">
+                    <span>Vencimento:</span>
+                    <input type="date" id="filterDateStart" class="glass-input-sm" title="Data Inicial">
+                    <span>té</span>
+                    <input type="date" id="filterDateEnd" class="glass-input-sm" title="Data Final">
+                </div>
+
+                <div class="select-wrapper">
+                    <button id="btnExport" class="btn-primary"
+                        style="height: 38px; width: 38px; padding: 0; justify-content: center;"
+                        title="Exportar Relatório">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Data Table -->
+        <section class="table-container glass">
+            <div class="table-feed">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="checkAll" onclick="toggleSelectAll()">
+                            </th>
+                            <th>Devedor</th>
+                            <th>Descrição</th>
+                            <th>Cartão</th>
+                            <th>Dt. Compra</th>
+                            <th>Vencimento</th>
+                            <th>Valor Parcela</th>
+                            <th>Parcelas</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loansTableBody">
+                        <!-- JS renders rows here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="empty-state hidden">
+                <p>Nenhum devedor encontrado.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal: Installment Details -->
+    <div id="detailsModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2 id="modalTitle">Detalhes</h2>
+                <button class="close-btn" onclick="closeModal('detailsModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="summary-row">
+                    <div>
+                        <small>Total</small>
+                        <strong id="modalTotal">R$ 0,00</strong>
+                    </div>
+                    <div>
+                        <small>Restante</small>
+                        <strong id="modalRestante">R$ 0,00</strong>
+                    </div>
+                </div>
+
+                <div class="alert-tip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Clique em uma parcela para alterar o status.
+                </div>
+
+                <div class="detail-notes" id="detailNotesContainer"></div>
+
+                <h3>Parcelas</h3>
+                <div class="installments-list" id="modalInstallmentsList"></div>
+
+                <div style="margin-top:20px; text-align:right;">
+                    <button onclick="deleteCurrentLoan()" class="btn-text-danger">Excluir Cadastro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cadastrar Devedor (NEW) -->
+    <div id="newDebtorModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Cadastrar Devedor</h2>
+                <button class="close-btn" onclick="closeModal('newDebtorModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newDebtorForm" onsubmit="handleNewDebtor(event)">
+                    <div class="form-group">
+                        <label>Nome do Devedor</label>
+                        <input type="text" id="inpDebtorName" required placeholder="Ex: João Silva">
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp (DDD+Num)</label>
+                        <input type="tel" id="inpDebtorPhone" placeholder="11999990000">
+                    </div>
+                    <div class="form-group">
+                        <label>Observação Padrão</label>
+                        <textarea id="inpDebtorNotes" rows="2"
+                            style="width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:8px; padding:8px; resize:none;"
+                            placeholder="Ex: Cliente VIP..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">Salvar Devedor</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Lançar Empréstimo (NEW) -->
+    <div id="newLoanModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Lançar Empréstimo</h2>
+                <button class="close-btn" onclick="closeModal('newLoanModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newLoanForm" onsubmit="handleNewLoan(event)">
+                    <div class="form-group">
+                        <label>Selecione o Devedor</label>
+                        <div style="display:flex; gap: 8px;">
+                            <select id="inpLoanDebtor" required style="flex:1;">
+                                <option value="">Carregando...</option>
+                            </select>
+                            <button type="button" onclick="openNewDebtorFromLoan()"
+                                style="padding: 10px; background: rgba(58,169,255,0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); border-radius: 8px;"
+                                title="Adicionar Novo">+</button>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select id="inpLoanType" onchange="toggleCardSelect()">
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="cartao">Cartão</option>
+                            </select>
+                        </div>
+                        <div class="form-group hidden" id="divLoanCard">
+                            <label>Cartão</label>
+                            <select id="inpLoanCard">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data da Compra</label>
+                            <input type="date" id="inpLoanPurchaseDate" required onchange="calcDueDate()">
+                        </div>
+                        <div class="form-group">
+                            <label id="lblLoanDate">Vencimento (1ª Parc)</label>
+                            <input type="date" id="inpLoanDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Valor Total (R$)</label>
+                            <input type="number" id="inpLoanValue" step="0.01" required placeholder="Ex: 1200.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Nº Parcelas</label>
+                            <input type="number" id="inpLoanInstallments" min="1" max="100" value="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descrição do Empréstimo</label>
+                        <textarea id="inpLoanDesc" rows="2"
+                            style="width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:8px; padding:8px; resize:none;"
+                            placeholder="Ex: Compra de TV..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Lançar Empréstimo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Relatório (NEW) -->
+    <div id="reportModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Relatório de Cobrança</h2>
+                <button class="close-btn" onclick="closeModal('reportModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Devedor</label>
+                    <select id="inpReportDebtor" onchange="updateReportPreview()">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Vencimento (Mês/Ano)</label>
+                    <!-- Using type=month for easier filtering, though browser support varies it falls back to text -->
+                    <input type="month" id="inpReportDate" onchange="updateReportPreview()">
+                    <small style="color:var(--text-secondary)">Deixe vazio para ver tudo.</small>
+                </div>
+
+                <div class="report-preview-box" id="reportPreview">
+                    <p style="text-align:center; color: var(--text-secondary)">Selecione um devedor para gerar o
+                        relatório.</p>
+                </div>
+
+                <div style="margin-top:20px;">
+                    <a id="btnSendReport" href="#" target="_blank" class="btn-submit"
+                        style="display:flex; justify-content:center; text-decoration:none; align-items:center; background: #25d366;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+                            <path
+                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                            </path>
+                        </svg>
+                        Enviar via WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gerenciar Cartões (NEW) -->
+    <div id="manageCardsModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Cartões de Crédito</h2>
+                <button class="close-btn" onclick="closeModal('manageCardsModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newCardForm" onsubmit="handleNewCard(event)"
+                    style="margin-bottom: 20px; padding-bottom:20px; border-bottom:1px solid var(--glass-border);">
+                    <h3>Novo Cartão</h3>
+                    <div class="form-group">
+                        <label>Nome do Cartão</label>
+                        <input type="text" id="inpCardName" required placeholder="Ex: Nubank Violeta">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Últimos 4 Dígitos</label>
+                            <input type="text" id="inpCardLast4" maxlength="4" placeholder="1234">
+                        </div>
+                        <div class="form-group">
+                            <label>Dia Vencimento</label>
+                            <input type="number" id="inpCardDueDay" min="1" max="31" required placeholder="Ex: 10">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%">Adicionar Cartão</button>
+                </form>
+
+                <h3>Meus Cartões</h3>
+                <div id="cardsList" class="manage-list">
+                    <!-- JS renders here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gerenciar Devedores (NEW) -->
+    <div id="manageDebtorsModal" class="modal-overlay hidden">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2>Gerenciar Devedores</h2>
+                <button class="close-btn" onclick="closeModal('manageDebtorsModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <button onclick="closeModal('manageDebtorsModal'); openModal('newDebtorModal')" class="btn-primary"
+                    style="width:100%; margin-bottom:15px; justify-content: center;">
+                    + Cadastrar Novo Devedor
+                </button>
+                <div id="debtorsList" class="manage-list">
+                    <!-- JS renders here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal: Export Options -->
+    <div id="exportModal" class="modal-overlay hidden">
+        <div class="modal glass" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Exportar Relatório</h2>
+                <button class="close-btn" onclick="closeModal('exportModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding-bottom: 30px;">
+                <p style="color:var(--text-secondary); margin-bottom:20px;">Escolha o formato desejado:</p>
+                <div style="display:grid; gap:10px;">
+                    <button onclick="generateExcel()" class="btn-primary"
+                        style="justify-content:center; border-color: #21a366; color: #21a366; font-size: 1rem; padding: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:8px">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="8" y1="13" x2="16" y2="13"></line>
+                            <line x1="8" y1="17" x2="16" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Excel (.xlsx)
+                    </button>
+                    <button onclick="generatePDF()" class="btn-primary"
+                        style="justify-content:center; border-color: #f40f02; color: #f40f02; font-size: 1rem; padding: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:8px">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                        PDF Documento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=23"></script>
+</body>
+
+</html>

@@ -1,0 +1,5 @@
+﻿Devedor,Telefone,Ref,Valor,Pago,Status,Inicio
+João da Silva,,,5000.00,1500.00,Pendente,2023-10-01
+Kamilla Morais,6191593238,teste,100.00,0.00,Pendente,2025-12-20
+weber,61984334690,teste,1000.00,0.00,Pendente,2025-12-14
+weber,61984334690,,200.00,200.00,Pago,2025-12-14
