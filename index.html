@@ -637,6 +637,38 @@
                         PDF Documento
                     </button>
                 </div>
+
+                <hr style="margin: 20px 0; border:0; border-top:1px solid #E0E5F2;">
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 5px;">Backup & Sincronização</h3>
+                <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:15px;">Baixe seus dados aqui e
+                    envie para o novo site.</p>
+
+                <button onclick="downloadBackup()" class="btn-primary"
+                    style="width:100%; margin-bottom:10px; background:#4a5568; border-color:#4a5568; justify-content:center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-right:8px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Fazer Backup Completo (JSON)
+                </button>
+
+                <div style="display:flex; gap:10px;">
+                    <input type="file" id="restoreFile" accept=".json" style="display:none"
+                        onchange="restoreBackup(this)">
+                    <button onclick="document.getElementById('restoreFile').click()" class="btn-primary"
+                        style="width:100%; justify-content:center; background:transparent; color:#4a5568; border:1px solid #cbd5e0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:8px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Restaurar Backup
+                    </button>
+                </div>
             </div>
         </div>
     </div>
